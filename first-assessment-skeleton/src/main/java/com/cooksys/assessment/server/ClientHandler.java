@@ -82,27 +82,15 @@ public class ClientHandler implements Runnable {
 	synchronized public void ableToWrite(PrintWriter pw, Message message) {
 
 		try {
-			if(message.getCommand()=="users"){
-				this.mapper.writeValue(pw,message);
-			}
-			else{
+			System.out.println(message.getUserList());
 			pw.write(this.mapper.writeValueAsString(message));
-			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		pw.flush();
 	}
-	// user command only
-	// synchronized public void ableToWrite(Message message) {
-	// System.out.println("here");
-	// try {
-	// this.writer.write(this.mapper.writeValueAsString(message));
-	// } catch (JsonProcessingException e) {
-	// e.printStackTrace();
-	// }
-	//
-	// }
+
+
 
 	public void run() {
 		try {
@@ -117,61 +105,104 @@ public class ClientHandler implements Runnable {
 
 				switch (message.getCommand()) {
 				case "connect":
-
+					boolean duplicate=true;
 					synchronized (this) {
 						clients.add(this);
 						clientsPw.add(this.writer);
 						this.user = message.getUsername();
+						if(!clientsUsers.contains(this.user)){
 						clientsUsers.add(this.user);
+						duplicate =false;
+						}
 					}
 					log.info("user <{}> connected", message.getUsername());
-					message.setCommand("connectionAlert");
-
 					message.setContents("has connected");
 					message.setTime(LocalDateTime.now().toString());
 					this.ableToWrite(ClientHandler.clientsPw, message);
-
+					if(!duplicate){
 					break;
+					}
 				case "disconnect":
 					log.info("user <{}> disconnected", message.getUsername());
-					message.setCommand("connectionAlert");
-					message.setContents("has disconnected");
-					message.setTime(LocalDateTime.now().toString());
-					ableToWrite(ClientHandler.clientsPw, message);
+					synchronized (this) {
+						message.setContents("has disconnected");
+						message.setTime(LocalDateTime.now().toString());
+						ableToWrite(ClientHandler.clientsPw, message);
+						clients.remove(this);
+						clientsPw.remove(this.writer);
+						clientsUsers.remove(this.user);
+						
+					}
 					this.socket.close();
 					break;
 				case "echo":
+					
 					log.info("user <{}> echoed message <{}>", message.getUsername(), message.getContents());
+					if(!message.getTime().equals(""))
+					{
+						message.setContents(LocalDateTime.now().toString()+" <"+message.getUsername()+"> (echo): "+message.getContents());
+					}
+					else{
 					message.setTime(LocalDateTime.now().toString());
+					}
 					this.ableToWrite(this.writer, message);
 					break;
 				case "broadcast":
+					if(!message.getTime().equals(""))
+					{
+						message.setContents(LocalDateTime.now().toString()+" <"+message.getUsername()+"> (all): "+message.getContents());
+					}
+					else{
 					message.setTime(LocalDateTime.now().toString());
+					}
 					ableToWrite(ClientHandler.clientsPw, message);
 					break;
 				case "users":
 
 					synchronized (this) {
 						String[] array = new String[1];
-						message.setUserList(clientsUsers.toArray(array));
-						
+						array= clientsUsers.toArray(array);
+						for (String x : array) {
+							message.setUserList( message.getUserList()+" "+x);
+						}
+
+					}
+					if(!message.getTime().equals(""))
+					{
+						message.setContents(LocalDateTime.now().toString()+": currently connected users: "+ message.getUserList());
+					}
+					else{
+					message.setTime(LocalDateTime.now().toString());
 					}
 					
-					message.setTime(LocalDateTime.now().toString());
 					ableToWrite(this.writer, message);
-
 					break;
 				default:
-					
+
 					if (message.getCommand().charAt(0) != ('@')) {
 						break;
 					} else {
 						String user = message.getCommand().substring(1);
+						boolean foundUser=false;
 						for (ClientHandler x : clients) {
 							if (x.getUser().equals(user)) {
+								System.out.println(message.getTime());
+								if(!message.getTime().equals(""))
+								{
+									message.setContents(LocalDateTime.now().toString()+" <"+message.getUsername()+"> (whisper): "+message.getContents());
+								}
+								else{
 								message.setTime(LocalDateTime.now().toString());
+								}
+								
 								ableToWrite(x.getWriter(), message);
+								foundUser=true;
 							}
+						}
+						if(!foundUser){
+							message.setCommand("error");
+							message.setContents("there is no user by this name");
+							ableToWrite(this.writer,message);
 						}
 					}
 				}

@@ -19,43 +19,62 @@ cli
   .delimiter(cli.chalk['green']('connected>'))
   .init(function (args, callback) {
     username = args.username
+    this.log(username)
     ip = args.ip
+    this.log('')
+    this.log(ip)
     server = connect({ host: ip, port: 8080 }, () => {
       server.write(new Message({ username, command: 'connect' }).toJSON() + '\n')
       callback()
     })
 
     server.on('data', (buffer) => {
-
+      let timeStamp=''
+      let username=''
+      let contents=''
       const recievedMessage =Message.fromJSON(buffer)
-      let timeStamp=chalk.red(recievedMessage.time)
-      let username=chalk.magenta(recievedMessage.username)
-      this.log(recievedMessage.command)
+      if(recievedMessage.time===undefined){
+        this.log(recievedMessage.contents)
+      //    [ recievedMessage.time, ...contents]=words(recievedMessage.contents,/[^ ]+/g)
+      //    contents= contents.join(' ')
+      // timeStamp=recievedMessage.time
+      // username=contents
+      }
+     else{
+      timeStamp=recievedMessage.time
+      username=recievedMessage.username
+
+    timeStamp=chalk.red(timeStamp)
+    username=chalk.magenta(username)
       if(recievedMessage.command!==undefined){
         if(recievedMessage.command === 'echo'){
-          let contents=chalk.blue(recievedMessage.toString())
+          contents=chalk.blue(recievedMessage.toString())
           this.log(`${timeStamp} <${username}> (echo): ${contents}`)
           }
         else if(recievedMessage.command === 'broadcast'){
-          let contents=chalk.blue(recievedMessage.toString())
+          contents=chalk.yellow(recievedMessage.toString())
           this.log(`${timeStamp} <${username}> (all): ${contents}`)
           }
         else if(recievedMessage.command === 'users'){
           this.log(`${timeStamp}: currently connected users:`)
           this.log(recievedMessage.userList)
-            for(x of recievedMessage.userList){
-              this.log(chalk.magenta(x.toString()))
             }
-          }
+
         else if(recievedMessage.command.charAt(0) === '@'){
-          let contents=chalk.blue(recievedMessage.toString())
+          contents=chalk.white(recievedMessage.toString())
           this.log(`${timeStamp} <${username}> (whisper): ${contents}`)
           }
-         else if (recievedMessage.command === 'connectionAlert'){
+         else if (recievedMessage.command === 'connect'||recievedMessage.command === 'disconnect'){
 
-          let contents=chalk.magenta(recievedMessage.toString())
+          contents=chalk.red(recievedMessage.toString())
           this.log(`${timeStamp} <${username}> ${contents}`)
           }
+          else{
+            this.log('An error has occured')
+            this.log(`${timeStamp} <${username}> ${contents}`)
+
+          }
+        }
       }
     })
 
@@ -78,24 +97,24 @@ cli
         previousCommand=command
       } else if (command === 'echo'||command==='2') {
         command= 'echo'
-          server.write(new Message({ username, command, contents,false }).toJSON() + '\n')
+          server.write(new Message({ username, command, contents }).toJSON() + '\n')
           previousCommand=command
         }
     // @user addition boolean variable to indicate private
         else if(command.charAt(0) === '@'){
-          server.write(new Message({ username, command, contents,true }).toJSON() + '\n')
+          server.write(new Message({ username, command, contents }).toJSON() + '\n')
           previousCommand=command
         }
     //brodcast command boolean variable to indicate not private
         else if(command==='broadcast'||command==='3'){
           command='broadcast'
-          server.write(new Message({ username, command, contents,false }).toJSON() + '\n')
+          server.write(new Message({ username, command, contents }).toJSON() + '\n')
           previousCommand=command
         }
     //asks for user data
         else if(command === 'users'||command=='4'){
           command= 'users'
-          server.write(new Message({ username, command, contents,false }).toJSON() + '\n')
+          server.write(new Message({ username, command, contents }).toJSON() + '\n')
           previousCommand=command
         }
 

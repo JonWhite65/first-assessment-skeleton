@@ -5,17 +5,15 @@ public class Message {
 	private String username;
 	private String command;
 	private String contents;
-	//Attempt to distinguish between private messages and public messages
-	private String type;
-	private String time;
-	private String[] userList;
+	private String time="test";
+	private String userList="";
 	//Getters and setter methods for type variable
 	
-	public String[] getUserList() {
+	public String getUserList() {
 		return userList;
 	}
 
-	public void setUserList(String[] userList) {
+	public void setUserList(String userList) {
 		this.userList = userList;
 	}
 
@@ -27,13 +25,7 @@ public class Message {
 		this.time = time;
 	}
 	
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
+	
 
 	public String getUsername() {
 		return username;
