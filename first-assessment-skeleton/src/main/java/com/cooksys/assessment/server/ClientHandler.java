@@ -82,8 +82,13 @@ public class ClientHandler implements Runnable {
 	synchronized public void ableToWrite(PrintWriter pw, Message message) {
 
 		try {
+			if(message.getCommand()=="users"){
+				this.mapper.writeValue(pw,message);
+			}
+			else{
 			pw.write(this.mapper.writeValueAsString(message));
-		} catch (JsonProcessingException e) {
+			}
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		pw.flush();
