@@ -4,11 +4,20 @@ public class Message {
 
 	private String username;
 	private String command;
-	private String contents;
-	private String time="test";
+	private String contents="";
+	private String time;
 	private String userList="";
-	//Getters and setter methods for type variable
+	private String joiner;
+	//Getters and setter methods for variables
 	
+	public String getJoiner() {
+		return joiner;
+	}
+
+	public void setJoiner(String joiner) {
+		this.joiner = joiner;
+	}
+
 	public String getUserList() {
 		return userList;
 	}

@@ -3,7 +3,7 @@ export class Message {
     return new Message(JSON.parse(buffer.toString()))
   }
 
-  constructor ({ username, command, contents, time= '',userList=''}) {
+  constructor ({ username, command, contents, time,userList,joiner}) {
     this.username = username
     this.command = command
     this.contents = contents
@@ -12,6 +12,8 @@ export class Message {
     //For clients that do not support specified fields the program will default to using contents as the fully formatted expected string
     this.time=time
     this.userList=userList
+    this.joiner= joiner
+
   }
 
   toJSON () {
@@ -21,7 +23,8 @@ export class Message {
       contents: this.contents,
       //additional fields for transfering and recieving data
       time: this.time,
-      userList: this.userList
+      userList: this.userList,
+      joiner:this.joiner
     })
   }
 

@@ -15,6 +15,14 @@ public class Server implements Runnable {
 	private int port;
 	private ExecutorService executor;
 	
+	public ExecutorService getExecutor() {
+		return executor;
+	}
+
+	public void setExecutor(ExecutorService executor) {
+		this.executor = executor;
+	}
+
 	public Server(int port, ExecutorService executor) {
 		super();
 		this.port = port;
@@ -28,7 +36,7 @@ public class Server implements Runnable {
 			ss = new ServerSocket(this.port);
 			while (true) {
 				Socket socket = ss.accept();
-				ClientHandler handler = new ClientHandler(socket);
+				ClientHandler handler = new ClientHandler(socket,this.executor);
 				executor.execute(handler);
 			}
 		} catch (IOException e) {
