@@ -25,16 +25,19 @@ public class ServerConnection implements Runnable {
 			this.message.setCommand("connect");
 			this.message.setUsername("Monster");
 			Socket so = new Socket(this.message.getJoiner(), 8080); 
-			Socket s = new Socket("localhost", 8080);
-			PrintWriter writer = new PrintWriter(new OutputStreamWriter(so.getOutputStream()));
-			PrintWriter writer1 = new PrintWriter(new OutputStreamWriter(s.getOutputStream()));
-			Scanner sc = new Scanner(so.getInputStream());
-			Scanner sc1 = new Scanner(s.getInputStream());
 			this.message.setCommand("connect");
 			this.message.setUsername("Monster");
-			writer.write(this.mapper.writeValueAsString(message));
+			PrintWriter writer = new PrintWriter(new OutputStreamWriter(so.getOutputStream()));
+			writer.write(mapper.writeValueAsString(message));
+			Socket s = new Socket("localhost", 8080);
+			PrintWriter writer1 = new PrintWriter(new OutputStreamWriter(s.getOutputStream()));
 			this.message.setUsername("Monster1");
-			writer1.write(this.mapper.writeValueAsString(message));
+			writer1.write(mapper.writeValueAsString(message));
+			Scanner sc = new Scanner(so.getInputStream());
+			Scanner sc1 = new Scanner(s.getInputStream());
+			
+			this.message.setUsername("Monster1");
+			
 			while (!so.isClosed() && !s.isClosed()) {
 				if (sc.hasNext()) {
 					writer.write(sc.next());

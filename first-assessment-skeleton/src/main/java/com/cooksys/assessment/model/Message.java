@@ -6,7 +6,7 @@ public class Message {
 	private String command;
 	private String contents="";
 	private String time;
-	private String userList="";
+	private String userList;
 	private String joiner;
 	//Getters and setter methods for variables
 	
