@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class ClientHandler implements Runnable {
 	public static List<ClientHandler> clients = new ArrayList<ClientHandler>();
 	public static List<PrintWriter> clientsPw = new ArrayList<PrintWriter>();
 	public static List<String> clientsUsers = new ArrayList<String>();
+	public static List<InetAddress> clientIp = new ArrayList<InetAddress>();
 	// used to transfer Message object back to javaScript
 	private PrintWriter writer;
 	private ObjectMapper mapper = new ObjectMapper();
@@ -41,6 +43,21 @@ public class ClientHandler implements Runnable {
 	// in the message recieved
 	private int type = 0;
 	private ExecutorService executor;
+	public Socket getSocket() {
+		return socket;
+	}
+
+	public void setSocket(Socket socket) {
+		this.socket = socket;
+	}
+
+	public ExecutorService getExecutor() {
+		return executor;
+	}
+
+	public void setExecutor(ExecutorService executor) {
+		this.executor = executor;
+	}
 
 	public PrintWriter getWriter() {
 		return writer;
@@ -74,11 +91,11 @@ public class ClientHandler implements Runnable {
 		this.mapper = mapper;
 	}
 
-	public ClientHandler(Socket socket,ExecutorService executor) {
+	public ClientHandler(Socket socket, ExecutorService executor) {
 		super();
 		this.socket = socket;
-		this.executor= executor;
-		
+		this.executor = executor;
+
 	}
 
 	// Two synchronized write methods used to prevent any thread from using the
@@ -144,13 +161,25 @@ public class ClientHandler implements Runnable {
 			while (!socket.isClosed()) {
 				String raw = reader.readLine();
 				Message message = mapper.readValue(raw, Message.class);
+				//massive string proof
+				if(message.getUsername().length()>1000){
+					message.setUsername(message.getUsername().substring(0, 101));
+				}
+				if(message.getContents().length()>1000){
+					message.setContents(message.getContents().substring(0, 101));
+				}
+				
+				// a person might change their name in a second message rewrites
+				// in coming messages to have correct user name
+				if (!(this.user == null)) {
+					message.setUsername(this.user);
 
+				}
 				switch (message.getCommand()) {
 				case "connect":
 					// used to check if a user with the same name is currently
 					// logged in to the server
 					boolean duplicate = true;
-
 					this.user = message.getUsername();
 					// Establishes the type of user
 					if (message.getContents().equals("")) {
@@ -159,11 +188,13 @@ public class ClientHandler implements Runnable {
 					// synchronized blocks will be used to ensure the accessing
 					// of static ArrayLists are done none concurrently
 					synchronized (this) {
-						// checks if user is already in server
+						// checks if user is already in server as well as a
+						// unique ip(anti-bot defense)
 						if (!clientsUsers.contains(this.user)) {
 							clients.add(this);
 							clientsPw.add(this.writer);
 							clientsUsers.add(this.user);
+							clientIp.add(this.socket.getInetAddress());
 							duplicate = false;
 							log.info("user <{}> connected", message.getUsername());
 							message.setContents("has connected");
@@ -171,11 +202,11 @@ public class ClientHandler implements Runnable {
 							this.ableToWrite(ClientHandler.clients, message);
 						}
 					}
-					// does not add the new user if userName is taken. sends
-					// error message
+					// does not add the new user if userName is taken or if they
+					// used a duplicate ip address. sends error message
 					if (duplicate) {
 						message.setCommand("error");
-						message.setContents("user already in system please log in with a diffrent name");
+						message.setContents("user or ip address is already in use");
 						message.setTime(LocalDateTime.now().toString());
 						this.ableToWrite(this, message);
 						this.socket.close();
@@ -190,6 +221,7 @@ public class ClientHandler implements Runnable {
 						clients.remove(this);
 						clientsPw.remove(this.writer);
 						clientsUsers.remove(this.user);
+						clientIp.remove(this.socket.getInetAddress());
 					}
 					this.socket.close();
 					break;
@@ -200,11 +232,12 @@ public class ClientHandler implements Runnable {
 					this.ableToWrite(this, message);
 					break;
 				case "broadcast":
+					log.info("user <{}> broadcast message <{}>", message.getUsername(), message.getContents());
 					message.setTime(LocalDateTime.now().toString());
 					ableToWrite(ClientHandler.clients, message);
 					break;
 				case "users":
-
+					log.info("user <{}> users message <{}>", message.getUsername(), message.getContents());
 					synchronized (this) {
 						String[] array = new String[1];
 						array = clientsUsers.toArray(array);
@@ -217,10 +250,10 @@ public class ClientHandler implements Runnable {
 					ableToWrite(this, message);
 					break;
 				case "join":
-					
-					ServerConnection a = new ServerConnection(message);
+
+					ServerConnection a = new ServerConnection(message,this);
 					executor.execute(a);
-					
+
 					break;
 				default:
 					// rejects empty commands and determines message is an @user
@@ -268,6 +301,7 @@ public class ClientHandler implements Runnable {
 				clients.remove(this);
 				clientsPw.remove(this.writer);
 				clientsUsers.remove(this.user);
+				clientIp.remove(this.socket.getInetAddress());
 				try {
 					socket.close();
 				} catch (IOException e1) {

@@ -6,7 +6,8 @@ public class Message {
 	private String command;
 	private String contents="";
 	private String time;
-	private String userList;
+	//users empty string initialized so that users does not display null
+	private String userList="";
 	private String joiner;
 	//Getters and setter methods for variables
 	

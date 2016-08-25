@@ -11,8 +11,6 @@ let server
 let ip
 let previousCommand = ''
 let joiner
-let userList
-let stealId= ['bob']
 
 cli
   .delimiter(cli.chalk['yellow']('ftd~$'))
@@ -28,12 +26,12 @@ cli
 
     server = connect({ host: ip, port: 8080 }, () => {
       //giving an intial value to contents gives me a way to distiguish server side a regular message class vs a modified one.
-      server.write(new Message({ username, command: 'connect',contents: 'Allow Special Connection' }).toJSON() + '\n')
+      server.write(new Message({ username, command: 'connect' }).toJSON() + '\n')
       callback()
     })
 
     server.on('data', (buffer) => {
-      let timeStamp=''
+
       let username=''
       let contents=''
 
@@ -49,9 +47,6 @@ cli
       }
         else if(recievedMessage.command === 'users'){
             this.log(recievedMessage.contents)
-            userList=recievedMessage.contents.substring((recievedMessage.contents).search('users:')+6)
-
-             stealId = words(userList,/[^ ]+/g)
         }
         else if(recievedMessage.command.charAt(0) === '@'){
             this.log(chalk.white(recievedMessage.contents))
@@ -62,45 +57,8 @@ cli
         else{
           this.log(chalk.cyan(recievedMessage.contents))
         }
-      }
-     else if(recievedMessage.command!==''&&recievedMessage.command!==null){
-       //using the additional fields the client can customize how they wish thier content to display
-       //uses colors to cause diffrent segements of a responce to be diffrent colors.
-      timeStamp=recievedMessage.time
-      username=recievedMessage.username
 
-    timeStamp=chalk.grey(timeStamp)
-    username=chalk.magenta(username)
-      if(recievedMessage.command!==undefined){
-        if(recievedMessage.command === 'echo'){
-          contents=chalk.blue(recievedMessage.toString())
-          this.log(`${timeStamp} <${username}> (echo): ${contents}`)
-          }
-        else if(recievedMessage.command === 'broadcast'){
-          contents=chalk.yellow(recievedMessage.toString())
-          this.log(`${timeStamp} <${username}> (all): ${contents}`)
-          }
-        else if(recievedMessage.command === 'users'){
-          this.log(`${timeStamp}: currently connected users:`)
-          this.log(recievedMessage.userList)
-          stealId = words(recievedMessage.userList,/[^ ]+/g)
-            }
 
-        else if(recievedMessage.command.charAt(0) === '@'){
-          contents=chalk.white(recievedMessage.toString())
-          this.log(`${timeStamp} <${username}> (whisper): ${contents}`)
-          }
-         else if (recievedMessage.command === 'connect'||recievedMessage.command === 'disconnect'){
-
-          contents=chalk.red(recievedMessage.toString())
-          this.log(`${timeStamp} <${username}> ${contents}`)
-          }
-          else{
-            this.log('An error has occured')
-            contents=chalk.cyan(recievedMessage.toString())
-            this.log(`${timeStamp} <${username}> ${contents}`)
-
-          }        }
       }
     })
 
@@ -153,13 +111,8 @@ cli
           joiner=contents
           server.write(new Message({ username, command,joiner }).toJSON() + '\n')
            previousCommand=command
-        }
-        //changes your name to the first user on a server if
-        else if(command==='steal'||command==='6'){
-          command= 'broadcast'
-          username=stealId[0]
-          server.write(new Message({ username, command, contents }).toJSON() + '\n')
-           previousCommand=command
+
+
         }
 
         else {
